@@ -1,0 +1,62 @@
+name: Deploy to Recette
+
+on:
+  push:
+    branches:
+      - recette
+
+env:
+  APP_NAME: g-api
+  IMAGE_NAME: ghcr.io/genius-station/g-api 
+  MANIFEST_PATH: ./apps/api/g-api
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Get the version
+        id: get_version
+        run: echo ::set-output name=VERSION::$(echo ${GITHUB_SHA})
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v1 
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: true
+          tags: ${{ env.IMAGE_NAME }}:${{ steps.get_version.outputs.VERSION }}
+
+  update_manifests:
+    needs: [build_and_push]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get the version
+        id: get_version
+        run: echo ::set-output name=VERSION::$(echo ${GITHUB_SHA})
+
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          repository: Genius-Station/kube-genius-recette-config
+          token: ${{ secrets.PAT }} 
+
+      - name: Replace image tags in deployments
+        run: |
+          find ${{ env.MANIFEST_PATH }} -type f -name "*deployment*" | xargs sed -i "s|${{ env.IMAGE_NAME }}:[0-9a-z\.]*|${{ env.IMAGE_NAME }}:${{ steps.get_version.outputs.VERSION }}|g"
+
+      - name: Commit and push
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          git commit -m "Update deployment ${{ env.APP_NAME }} image tags to ${{ steps.get_version.outputs.VERSION }}"
+          git push

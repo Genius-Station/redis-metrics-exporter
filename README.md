@@ -1,5 +1,7 @@
 # Redis Metrics Exporter
 
+#TODO : Configure config.json
+
 Simple webserver exporting Redis data as Prometheus metrics.
 
 # Installation
