@@ -6,9 +6,9 @@ on:
       - recette
 
 env:
-  APP_NAME: g-api
-  IMAGE_NAME: ghcr.io/genius-station/g-api 
-  MANIFEST_PATH: ./apps/api/g-api
+  APP_NAME: redis-metrics-exporter
+  IMAGE_NAME: ghcr.io/genius-station/redis-metrics-exporter
+  MANIFEST_PATH: ./apps/redis-metrics-exporter
 
 jobs:
   build_and_push:
